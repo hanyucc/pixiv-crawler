@@ -38,7 +38,6 @@ def downloadOneImage(imgInfo, entireUrl):
     then = imgSrc[:].find('.')
 
     imgOrigSrc = 'https://i.pximg.net/img-original/' + imgSrc[begin:end] + imgSrc[end + then + 2:]
-    print(imgOrigSrc)
 
     srcHeaders = headers
     srcHeaders['Referer'] = entireUrl
@@ -71,12 +70,14 @@ def downloadOneImage(imgInfo, entireUrl):
             try:
                 os.mkdir('images')
             except Exception as e:
-                print('Directory exists.')
+                doNothing = 0
 
             with open('images/' + title + '.png', 'ab') as image:
                 image.write(img)
 
     except Exception as e:
+        print(imgOrigSrc)
+
         title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
             .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
 
