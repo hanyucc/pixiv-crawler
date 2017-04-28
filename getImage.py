@@ -89,7 +89,51 @@ def downloadOneImage(imgInfo, entireUrl):
         with open('images/' + title + '.jpg', 'ab') as image:
             image.write(img)
 
-    time.sleep(2)
+    time.sleep(1)
+
+
+def downloadMultiImages(title, imgUrl):
+    replace = imgUrl.find('illust_id=')
+    newUrl = 'https://www.pixiv.net/member_illust.php?mode=manga&illust_id=' + imgUrl[replace + 10:]
+    html = se.get(newUrl, headers=headers, timeout=10)
+    soup = BeautifulSoup(html.text, 'lxml')
+    total = soup.find('span', class_='total')
+    newUrl = 'https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=' + imgUrl[replace + 10:]
+
+    print(newUrl)
+
+    for i in range(int(total.text)):
+        multiUrl = newUrl + '&page=' + str(i + 1)
+        html = se.get(multiUrl, headers=headers, timeout=10)
+        soup = BeautifulSoup(html.text, 'lxml')
+        imgSrc = soup.find('img')['src']
+
+        srcHeaders = headers
+        srcHeaders['Referer'] = multiUrl
+
+        try:
+            img = requests.get(imgSrc, headers=srcHeaders).content
+        except Exception as e:
+            print('Download image failed. Trying again.')
+            try:
+                img = requests.get(imgSrc, headers=srcHeaders).content
+            except Exception as e:
+                print('Download image failed. Skipping image.')
+
+        type = imgSrc[-4:]
+
+        try:
+            os.mkdir('images')
+        except Exception as e:
+            doNothing = 0
+
+        with open('images/' + title + '_' + str(i + 1) + type, 'ab') as image:
+            image.write(img)
+            print(i + 1)
+
+
+        time.sleep(1)
+
 
 def getImg(item):
     baseUrl = 'https://www.pixiv.net'
@@ -100,11 +144,25 @@ def getImg(item):
     html = se.get(baseUrl + imgUrl, headers=headers, timeout=10)
 
     soup = BeautifulSoup(html.text, 'lxml')
-    imgInfo = soup.find('div', attrs={'class', 'works_display'})\
+    imgInfo = soup.find('div', class_='works_display')\
         .find('div', class_='_layout-thumbnail ui-modal-trigger')
 
     if imgInfo:
         downloadOneImage(imgInfo, baseUrl + imgUrl)
+    else:
+        try:
+            title = soup.find('div', class_='works_display')\
+                .find('div', class_='_layout-thumbnail')\
+                .find('img')['alt']
+            imgInfo = soup.find('div', class_='works_display') \
+                .find('div', class_='multiple')
+        except Exception as e:
+            return
+
+        if imgInfo:
+            downloadMultiImages(title, imgUrl)
+
+
 
 pixiv_id = getHtml.pixiv_id
 password = getHtml.password
@@ -115,7 +173,7 @@ login()
 
 cnt = 0
 
-for i in range(pages):
+for i in range(9, pages):
     print('\nStarting page ' + str(i + 1) + '\n')
     html = open('htmls/page-' + str(i + 1) + '.html', encoding='UTF-8').read()
     soup = BeautifulSoup(html, 'lxml')
