@@ -40,7 +40,7 @@ pixiv_id = input('Enter pixiv id or email: ')
 password = input('Enter pixiv password: ')
 
 login()
-'''
+
 for i in range(pages):
     url ='https://www.pixiv.net/search.php?s_mode=s_tag&word=' + searchKeyword + '&p='\
         + str(i + 1)
@@ -56,5 +56,4 @@ for i in range(pages):
     with open('htmls/page-' + str(i + 1) + '.html', 'w', encoding='UTF-8') as file:
         file.write(html.text)
 
-    time.sleep(2)
-'''
+    time.sleep(3)

@@ -10,8 +10,8 @@ base_url = 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&re
 login_url = 'https://accounts.pixiv.net/api/login?lang=zh'
 headers = {
     'Referer': 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&ref=wwwtop_accounts_index',
-    'User-Agent': 'User-Agent:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'
-}
+    "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36"
+	}
 pixiv_id = ''
 password = ''
 return_to = 'http://www.pixiv.net/'
@@ -89,7 +89,7 @@ def downloadOneImage(imgInfo, entireUrl):
         with open('images/' + title + '.jpg', 'ab') as image:
             image.write(img)
 
-    time.sleep(1)
+    time.sleep(3)
 
 
 def downloadMultiImages(title, imgUrl):
@@ -127,12 +127,20 @@ def downloadMultiImages(title, imgUrl):
         except Exception as e:
             doNothing = 0
 
-        with open('images/' + title + '_' + str(i + 1) + type, 'ab') as image:
+        title = title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+            .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
+
+        try:
+            os.mkdir('images/' + title)
+        except Exception as e:
+            doNothing = 0
+
+        with open('images/' + title + '/' + str(i + 1) + type, 'ab') as image:
             image.write(img)
             print(i + 1)
 
 
-        time.sleep(1)
+        time.sleep(3)
 
 
 def getImg(item):
@@ -173,7 +181,7 @@ login()
 
 cnt = 0
 
-for i in range(9, pages):
+for i in range(pages):
     print('\nStarting page ' + str(i + 1) + '\n')
     html = open('htmls/page-' + str(i + 1) + '.html', encoding='UTF-8').read()
     soup = BeautifulSoup(html, 'lxml')
