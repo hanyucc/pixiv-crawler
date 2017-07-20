@@ -32,7 +32,8 @@ def login():
 rawKeyword = input('Enter search keyword: ')
 searchKeyword = ur.quote(rawKeyword)
 
-pages = [int(x) for x in input('Enter number of pages to search: ').split()][0]
+startPage = [int(x) for x in input('Enter start page: ').split()][0]
+endPage = [int(x) for x in input('Enter end page: ').split()][0]
 
 favThresh = [int(x) for x in input('Enter least number of bookmarks accepted: ').split()][0]
 
@@ -41,9 +42,12 @@ password = input('Enter pixiv password: ')
 
 login()
 
-for i in range(pages):
+for i in range(startPage, endPage + 1):
+    if os.path.isfile('htmls/page-' + str(i) + '.html'):
+        continue
+
     url ='https://www.pixiv.net/search.php?s_mode=s_tag&word=' + searchKeyword + '&p='\
-        + str(i + 1)
+        + str(i)
     print(url)
 
     html = se.get(url, headers=headers, timeout=3)
@@ -53,7 +57,7 @@ for i in range(pages):
     except Exception as e:
         doNothing = 0
 
-    with open('htmls/page-' + str(i + 1) + '.html', 'w', encoding='UTF-8') as file:
+    with open('htmls/page-' + str(i) + '.html', 'w', encoding='UTF-8') as file:
         file.write(html.text)
 
     time.sleep(3)

@@ -1,9 +1,9 @@
 # pixiv-crawler
 A Pixiv crawler that can filter images by the numbers of bookmarks.
 
-Simply run _getImage.py_ and follow the instructions.
+Simply run _GetImage.py_ and follow the instructions.
 
-You will need _Python 3_ and maybe the following commands as well.
+You will need _Python 3_, _pip_, and the following commands executed.
 
 ```bash
 pip install requests
