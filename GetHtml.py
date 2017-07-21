@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-import urllib.request as ur
 import os
 import time
 
@@ -30,7 +29,7 @@ def login():
     se.post(login_url, data=data, headers=headers)
 
 rawKeyword = input('Enter search keyword: ')
-searchKeyword = ur.quote(rawKeyword)
+searchKeyword = requests.utils.quote(rawKeyword)
 
 startPage = [int(x) for x in input('Enter start page: ').split()][0]
 endPage = [int(x) for x in input('Enter end page: ').split()][0]
