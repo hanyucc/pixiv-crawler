@@ -9,6 +9,7 @@ headers = {
 }
 se = requests.session()
 
+
 def downloadOneImage(imgInfo, entireUrl):
     imgInfo = imgInfo.find('img')
     imgSrc = imgInfo['src']
@@ -24,11 +25,11 @@ def downloadOneImage(imgInfo, entireUrl):
 
     try:
         img = requests.get(imgOrigSrc, headers=srcHeaders).content
-    except Exception as e:
+    except Exception:
         print('Download image failed. Trying again.')
         try:
             img = requests.get(imgOrigSrc, headers=srcHeaders).content
-        except Exception as e:
+        except Exception:
             print('Download image failed. Skipping image.')
 
     try:
@@ -37,11 +38,11 @@ def downloadOneImage(imgInfo, entireUrl):
             print(imgOrigSrc)
             try:
                 img = requests.get(imgOrigSrc, headers=srcHeaders).content
-            except Exception as e:
+            except Exception:
                 print('Download image failed. Trying again.')
                 try:
                     img = requests.get(imgOrigSrc, headers=srcHeaders).content
-                except Exception as e:
+                except Exception:
                     print('Download image failed. Skipping image.')
 
             title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
@@ -49,13 +50,13 @@ def downloadOneImage(imgInfo, entireUrl):
 
             try:
                 os.mkdir('images')
-            except Exception as e:
-                doNothing = 0
+            except Exception:
+                pass
 
             with open('images/' + title + '.png', 'ab') as image:
                 image.write(img)
 
-    except Exception as e:
+    except Exception:
         print(imgOrigSrc)
 
         title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
@@ -63,8 +64,8 @@ def downloadOneImage(imgInfo, entireUrl):
         
         try:
             os.mkdir('images')
-        except Exception as e:
-            doNothing = 0
+        except Exception:
+            pass
 
         with open('images/' + title + '.jpg', 'ab') as image:
             image.write(img)
@@ -93,31 +94,30 @@ def downloadMultiImages(title, imgUrl):
 
         try:
             img = requests.get(imgSrc, headers=srcHeaders).content
-        except Exception as e:
+        except Exception:
             print('Download image failed. Trying again.')
             try:
                 img = requests.get(imgSrc, headers=srcHeaders).content
-            except Exception as e:
+            except Exception:
                 print('Download image failed. Skipping image.')
 
         type = imgSrc[-4:]
 
         try:
             os.mkdir('images')
-        except Exception as e:
-            doNothing = 0
+        except Exception:
+            pass
 
         title = title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
             .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
 
         try:
             os.mkdir('images/' + title)
-        except Exception as e:
-            doNothing = 0
+        except Exception:
+            pass
 
         with open('images/' + title + '/' + str(i + 1) + type, 'ab') as image:
             image.write(img)
             print(i + 1)
-
 
         time.sleep(3)

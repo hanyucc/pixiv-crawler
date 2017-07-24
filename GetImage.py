@@ -2,8 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import GetHtml
 import ImageUtils
-import os
-import time
 
 se = requests.session()
 base_url = 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&ref=wwwtop_accounts_index'
@@ -47,7 +45,7 @@ def getImg(item):
                 .find('img')['alt']
             imgInfo = soup.find('div', class_='works_display') \
                 .find('div', class_='multiple')
-        except Exception as e:
+        except Exception:
             return
 
         if imgInfo:
