@@ -38,6 +38,8 @@ def getImg(item):
 
     if imgInfo:
         ImageUtils.downloadOneImage(imgInfo, baseUrl + imgUrl)
+    elif multiImages == 'n':
+        return
     else:
         try:
             title = soup.find('div', class_='works_display')\
@@ -56,6 +58,7 @@ password = GetHtml.password
 startPage = GetHtml.startPage
 endPage = GetHtml.endPage
 favThresh = GetHtml.favThresh
+multiImages = GetHtml.multiImages
 
 login()
 

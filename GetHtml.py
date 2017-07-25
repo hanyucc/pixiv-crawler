@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import time
+import shutil
 
 se = requests.session()
 
@@ -33,11 +34,32 @@ startPage = [int(x) for x in input('Enter start page: ').split()][0]
 endPage = [int(x) for x in input('Enter end page: ').split()][0]
 
 favThresh = [int(x) for x in input('Enter least number of bookmarks accepted: ').split()][0]
+multiImages = input('Accept multiple images (manga)? (y/n): ').split()[0]
 
 pixiv_id = input('Enter pixiv id or email: ')
 password = input('Enter pixiv password: ')
 
 login()
+
+try:
+    lastKeyword = open('htmls/.lastKeyword').read()
+    if lastKeyword != searchKeyword:
+        deleteFolders = input('htmls and images folders need to be deleted to continue. (y/n): ')
+        if deleteFolders == 'y':
+            shutil.rmtree('htmls')
+            shutil.rmtree('images')
+        else:
+            raise SystemExit
+except Exception:
+    try:
+        deleteFolders = input('htmls and images folders need to be deleted to continue. (y/n): ')
+        if deleteFolders == 'y':
+            shutil.rmtree('htmls')
+            shutil.rmtree('images')
+        else:
+            raise SystemExit
+    except Exception:
+        pass
 
 for i in range(startPage, endPage + 1):
     if os.path.isfile('htmls/page-' + str(i) + '.html'):
@@ -51,6 +73,8 @@ for i in range(startPage, endPage + 1):
 
     try:
         os.mkdir('htmls')
+        with open('htmls/.lastKeyword', 'w') as f:
+            f.write(searchKeyword)
     except Exception:
         pass
 
