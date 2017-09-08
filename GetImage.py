@@ -1,7 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
-import GetHtml
-import ImageUtils
+# import GetHtml
+import time
+import os
+import shutil
 
 se = requests.session()
 base_url = 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&ref=wwwtop_accounts_index'
@@ -24,6 +26,120 @@ def login():
     }
     se.post(login_url, data=data, headers=headers)
 
+
+def downloadOneImage(imgInfo, entireUrl):
+    imgInfo = imgInfo.find('img')
+    imgSrc = imgInfo['src']
+
+    begin = imgSrc.find('img/')
+    end = imgSrc.find('_master')
+    then = imgSrc[:].find('.')
+
+    imgOrigSrc = 'https://i.pximg.net/img-original/' + imgSrc[begin:end] + imgSrc[end + then + 2:]
+
+    srcHeaders = headers
+    srcHeaders['Referer'] = entireUrl
+
+    try:
+        img = requests.get(imgOrigSrc, headers=srcHeaders).content
+    except Exception:
+        print('Download image failed. Trying again.')
+        try:
+            img = requests.get(imgOrigSrc, headers=srcHeaders).content
+        except Exception:
+            print('Download image failed. Skipping image.')
+
+    try:
+        if img.decode('UTF-8').find('404 Not'):
+            imgOrigSrc = imgOrigSrc[:-3] + 'png'
+            print(imgOrigSrc)
+            try:
+                img = requests.get(imgOrigSrc, headers=srcHeaders).content
+            except Exception:
+                print('Download image failed. Trying again.')
+                try:
+                    img = requests.get(imgOrigSrc, headers=srcHeaders).content
+                except Exception:
+                    print('Download image failed. Skipping image.')
+
+            title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+                .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
+
+            try:
+                os.mkdir('images')
+            except Exception:
+                pass
+
+            with open('images/' + title + '.png', 'ab') as image:
+                image.write(img)
+
+    except Exception:
+        print(imgOrigSrc)
+
+        title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+            .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
+
+        try:
+            os.mkdir('images')
+        except Exception:
+            pass
+
+        with open('images/' + title + '.jpg', 'ab') as image:
+            image.write(img)
+
+    time.sleep(3)
+
+
+def downloadMultiImages(title, imgUrl):
+    replace = imgUrl.find('illust_id=')
+    newUrl = 'https://www.pixiv.net/member_illust.php?mode=manga&illust_id=' + imgUrl[replace + 10:]
+    html = se.get(newUrl, headers=headers, timeout=10)
+    soup = BeautifulSoup(html.text, 'lxml')
+    total = soup.find('span', class_='total')
+    newUrl = 'https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=' + imgUrl[replace + 10:]
+
+    print(newUrl)
+
+    for i in range(int(total.text)):
+        multiUrl = newUrl + '&page=' + str(i)
+        html = se.get(multiUrl, headers=headers, timeout=10)
+        soup = BeautifulSoup(html.text, 'lxml')
+        imgSrc = soup.find('img')['src']
+
+        srcHeaders = headers
+        srcHeaders['Referer'] = multiUrl
+
+        try:
+            img = requests.get(imgSrc, headers=srcHeaders).content
+        except Exception:
+            print('Download image failed. Trying again.')
+            try:
+                img = requests.get(imgSrc, headers=srcHeaders).content
+            except Exception:
+                print('Download image failed. Skipping image.')
+
+        type = imgSrc[-4:]
+
+        try:
+            os.mkdir('images')
+        except Exception:
+            pass
+
+        title = title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+            .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
+
+        try:
+            os.mkdir('images/' + title)
+        except Exception:
+            pass
+
+        with open('images/' + title + '/' + str(i) + type, 'ab') as image:
+            image.write(img)
+            print(multiUrl)
+
+        time.sleep(3)
+
+
 def getImg(item):
     baseUrl = 'https://www.pixiv.net'
     imgUrl = item.find('a', class_='work')['href']
@@ -37,7 +153,7 @@ def getImg(item):
         .find('div', class_='_layout-thumbnail ui-modal-trigger')
 
     if imgInfo:
-        ImageUtils.downloadOneImage(imgInfo, baseUrl + imgUrl)
+        downloadOneImage(imgInfo, baseUrl + imgUrl)
     elif multiImages == 'n':
         return
     else:
@@ -46,21 +162,70 @@ def getImg(item):
                 .find('div', class_='_layout-thumbnail')\
                 .find('img')['alt']
             imgInfo = soup.find('div', class_='works_display') \
-                .find('div', class_='multiple')
+                .find('a', class_='multiple')
         except Exception:
             return
 
         if imgInfo:
-            ImageUtils.downloadMultiImages(title, imgUrl)
+            downloadMultiImages(title, imgUrl)
 
-pixiv_id = GetHtml.pixiv_id
-password = GetHtml.password
-startPage = GetHtml.startPage
-endPage = GetHtml.endPage
-favThresh = GetHtml.favThresh
-multiImages = GetHtml.multiImages
+
+rawKeyword = input('Enter search keyword: ')
+searchKeyword = requests.utils.quote(rawKeyword)
+
+startPage = [int(x) for x in input('Enter start page: ').split()][0]
+endPage = [int(x) for x in input('Enter end page: ').split()][0]
+
+favThresh = [int(x) for x in input('Enter least number of bookmarks accepted: ').split()][0]
+multiImages = input('Accept multiple images (manga)? (y/n): ').split()[0]
+
+pixiv_id = input('Enter pixiv id or email: ')
+password = input('Enter pixiv password: ')
 
 login()
+
+try:
+    lastKeyword = open('htmls/.lastKeyword').read()
+    if lastKeyword != searchKeyword:
+        deleteFolders = input('htmls and images folders need to be deleted to continue. (y/n): ')
+        if deleteFolders == 'y':
+            shutil.rmtree('htmls')
+            shutil.rmtree('images')
+        else:
+            raise SystemExit
+except Exception:
+    try:
+        deleteFolders = input('htmls and images folders need to be deleted to continue. (y/n): ')
+        if deleteFolders == 'y':
+            shutil.rmtree('htmls')
+            shutil.rmtree('images')
+        else:
+            raise SystemExit
+    except Exception:
+        pass
+
+for i in range(startPage, endPage + 1):
+    if os.path.isfile('htmls/page-' + str(i) + '.html'):
+        continue
+
+    url ='https://www.pixiv.net/search.php?s_mode=s_tag&word=' + searchKeyword + '&p='\
+        + str(i)
+    print(url)
+
+    html = se.get(url, headers=headers, timeout=3)
+
+    try:
+        os.mkdir('htmls')
+        with open('htmls/.lastKeyword', 'w') as f:
+            f.write(searchKeyword)
+    except Exception:
+        pass
+
+    with open('htmls/page-' + str(i) + '.html', 'w', encoding='UTF-8') as file:
+        file.write(html.text)
+
+    time.sleep(3)
+
 
 cnt = 0
 
