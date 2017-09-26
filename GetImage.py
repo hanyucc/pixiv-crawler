@@ -4,7 +4,9 @@ from bs4 import BeautifulSoup
 import time
 import os
 import shutil
+from fake_useragent import UserAgent
 
+ua = UserAgent()
 se = requests.session()
 base_url = 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&ref=wwwtop_accounts_index'
 login_url = 'https://accounts.pixiv.net/api/login?lang=zh'
@@ -30,6 +32,11 @@ def login():
 def downloadOneImage(imgInfo, entireUrl):
     imgInfo = imgInfo.find('img')
     imgSrc = imgInfo['src']
+    title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+        .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
+
+    if os.path.isfile('images/' + title + '.png') or os.path.isfile('images/' + title + '.jpg'):
+        return
 
     begin = imgSrc.find('img/')
     end = imgSrc.find('_master')
@@ -62,9 +69,6 @@ def downloadOneImage(imgInfo, entireUrl):
                 except Exception:
                     print('Download image failed. Skipping image.')
 
-            title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
-                .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
-
             try:
                 os.mkdir('images')
             except Exception:
@@ -75,9 +79,6 @@ def downloadOneImage(imgInfo, entireUrl):
 
     except Exception:
         print(imgOrigSrc)
-
-        title = imgInfo['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
-            .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
 
         try:
             os.mkdir('images')
@@ -91,6 +92,8 @@ def downloadOneImage(imgInfo, entireUrl):
 
 
 def downloadMultiImages(title, imgUrl):
+    title = title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+        .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
     replace = imgUrl.find('illust_id=')
     newUrl = 'https://www.pixiv.net/member_illust.php?mode=manga&illust_id=' + imgUrl[replace + 10:]
     html = se.get(newUrl, headers=headers, timeout=10)
@@ -100,14 +103,18 @@ def downloadMultiImages(title, imgUrl):
 
     print(newUrl)
 
-    for i in range(int(total.text)):
+    for i in range(int(total.text) + 1):
         multiUrl = newUrl + '&page=' + str(i)
         html = se.get(multiUrl, headers=headers, timeout=10)
         soup = BeautifulSoup(html.text, 'lxml')
         imgSrc = soup.find('img')['src']
+        type = imgSrc[-4:]
 
         srcHeaders = headers
         srcHeaders['Referer'] = multiUrl
+
+        if os.path.isfile('images/' + title + '/' + title + '-' + str(i) + type):
+            continue
 
         try:
             img = requests.get(imgSrc, headers=srcHeaders).content
@@ -118,22 +125,17 @@ def downloadMultiImages(title, imgUrl):
             except Exception:
                 print('Download image failed. Skipping image.')
 
-        type = imgSrc[-4:]
-
         try:
             os.mkdir('images')
         except Exception:
             pass
-
-        title = title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
-            .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
 
         try:
             os.mkdir('images/' + title)
         except Exception:
             pass
 
-        with open('images/' + title + '/' + str(i) + type, 'ab') as image:
+        with open('images/' + title + '/' + title + '-' + str(i) + type, 'ab') as image:
             image.write(img)
             print(multiUrl)
 
@@ -141,9 +143,10 @@ def downloadMultiImages(title, imgUrl):
 
 
 def getImg(item):
+    headers['Referer'] = ua.random
+
     baseUrl = 'https://www.pixiv.net'
     imgUrl = item.find('a', class_='work')['href']
-
     # print(baseUrl+imgUrl)
 
     html = se.get(baseUrl + imgUrl, headers=headers, timeout=10)
@@ -224,7 +227,7 @@ for i in range(startPage, endPage + 1):
     with open('htmls/page-' + str(i) + '.html', 'w', encoding='UTF-8') as file:
         file.write(html.text)
 
-    time.sleep(3)
+    time.sleep(5)
 
 
 cnt = 0
