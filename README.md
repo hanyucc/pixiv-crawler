@@ -1,12 +1,17 @@
 # pixiv-crawler
 A Pixiv crawler that can filter images by the numbers of bookmarks.
 
-Simply run ```get_image.py``` and follow the instructions.
+# Requirements
+* Python 3
+* Requests
+* BeautifulSoup 4
+```
+pip3 install requests
+pip3 install beautifulsoup4
+pip3 install lxml
+```
 
-You will need ```Python 3```, ```pip```, and the following commands executed.
-
-```bash
-pip install requests
-pip install beautifulsoup4
-pip install lxml
+# Usage
+```
+python3 get_image.py
 ```
