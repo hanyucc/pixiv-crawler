@@ -10,6 +10,10 @@ pip3 install requests
 pip3 install beautifulsoup4
 pip3 install lxml
 ```
+If socks5 proxy is used.
+```
+pip3 install requests[socks]
+```
 
 # Usage
 ```
