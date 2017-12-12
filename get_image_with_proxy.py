@@ -8,6 +8,11 @@ from bs4 import BeautifulSoup
 
 se = requests.session()
 
+proxies = {
+    'http': 'socks5h://127.0.0.1:1080',
+    'https': 'socks5h://127.0.0.1:1080'
+}
+
 headers = {
     'Referer': 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&ref=wwwtop_accounts_index',
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/62.0.3202.89 Chrome/62.0.3202.89 Safari/537.36'
@@ -18,7 +23,7 @@ def login(pixiv_id, password):
     base_url = 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&ref=wwwtop_accounts_index'
     login_url = 'https://accounts.pixiv.net/api/login?lang=zh'
     return_to = 'https://www.pixiv.net/'
-    post_key_html = se.get(base_url, headers=headers).text
+    post_key_html = se.get(base_url, headers=headers, proxies=proxies).text
     post_key_soup = BeautifulSoup(post_key_html, 'lxml')
     post_key = post_key_soup.find('input')['value']
     data = {
@@ -27,7 +32,7 @@ def login(pixiv_id, password):
         'return_to': return_to,
         'post_key': post_key
     }
-    se.post(login_url, data=data, headers=headers)
+    se.post(login_url, data=data, headers=headers, proxies=proxies)
 
 
 def download_one_image(img_info, entire_url):
@@ -49,11 +54,11 @@ def download_one_image(img_info, entire_url):
     src_headers['Referer'] = entire_url
 
     try:
-        img = se.get(img_orig_src, headers=src_headers).content
+        img = se.get(img_orig_src, headers=src_headers, proxies=proxies).content
     except Exception:
         print('Download image failed. Trying again.')
         try:
-            img = se.get(img_orig_src, headers=src_headers).content
+            img = se.get(img_orig_src, headers=src_headers, proxies=proxies).content
         except Exception:
             print('Download image failed. Skipping image.')
             time.sleep(3)
@@ -64,11 +69,11 @@ def download_one_image(img_info, entire_url):
             img_orig_src = img_orig_src[:-3] + 'png'
             print(img_orig_src)
             try:
-                img = se.get(img_orig_src, headers=src_headers).content
+                img = se.get(img_orig_src, headers=src_headers, proxies=proxies).content
             except Exception:
                 print('Download image failed. Trying again.')
                 try:
-                    img = se.get(img_orig_src, headers=src_headers).content
+                    img = se.get(img_orig_src, headers=src_headers, proxies=proxies).content
                 except Exception:
                     print('Download image failed. Skipping image.')
 
@@ -99,7 +104,7 @@ def download_multi_images(title, illust_id):
         .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
     replace = img_url.find('illust_id=')
     new_url = 'https://www.pixiv.net/member_illust.php?mode=manga&illust_id=' + illust_id
-    html = se.get(new_url, headers=headers, timeout=10)
+    html = se.get(new_url, headers=headers, timeout=10, proxies=proxies)
     soup = BeautifulSoup(html.text, 'lxml')
     total = soup.find('span', class_='total')
     new_url = 'https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=' + illust_id
@@ -108,7 +113,7 @@ def download_multi_images(title, illust_id):
 
     for i in range(int(total.text) + 1):
         multi_url = new_url + '&page=' + str(i)
-        html = se.get(multi_url, headers=headers, timeout=10)
+        html = se.get(multi_url, headers=headers, timeout=10, proxies=proxies)
         soup = BeautifulSoup(html.text, 'lxml')
         img_src = soup.find('img')['src']
         type = img_src[-4:]
@@ -120,11 +125,11 @@ def download_multi_images(title, illust_id):
             continue
 
         try:
-            img = se.get(img_src, headers=src_headers).content
+            img = se.get(img_src, headers=src_headers, proxies=proxies).content
         except Exception:
             print('Download image failed. Trying again.')
             try:
-                img = se.get(img_src, headers=src_headers).content
+                img = se.get(img_src, headers=src_headers, proxies=proxies).content
             except Exception:
                 print('Download image failed. Skipping image.')
                 continue
@@ -150,7 +155,7 @@ def get_img(illust_id):
     base_url = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
     img_url = base_url + illust_id
 
-    html = se.get(img_url, headers=headers, timeout=10)
+    html = se.get(img_url, headers=headers, timeout=10, proxies=proxies)
 
     soup = BeautifulSoup(html.text, 'lxml')
     img_info = soup.find('div', class_='works_display')\
@@ -227,7 +232,7 @@ def main():
             + str(i)
         print(url)
 
-        html = se.get(url, headers=headers, timeout=10)
+        html = se.get(url, headers=headers, timeout=10, proxies=proxies)
 
         try:
             os.mkdir('htmls')
