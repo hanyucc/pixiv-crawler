@@ -97,7 +97,6 @@ def download_one_image(img_info, entire_url):
 def download_multi_images(title, illust_id):
     title = title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
         .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
-    replace = img_url.find('illust_id=')
     new_url = 'https://www.pixiv.net/member_illust.php?mode=manga&illust_id=' + illust_id
     html = se.get(new_url, headers=headers, timeout=10)
     soup = BeautifulSoup(html.text, 'lxml')
@@ -146,7 +145,7 @@ def download_multi_images(title, illust_id):
         time.sleep(3)
 
 
-def get_img(illust_id):
+def get_img(illust_id, multi_images):
     base_url = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
     img_url = base_url + illust_id
 
@@ -249,7 +248,7 @@ def main():
 
         for item in data_items:
             if item['bookmarkCount'] >= bookmark_thresh:
-                get_img(item['illustId'])
+                get_img(item['illustId'], multi_images)
 
     print('\n' + str(cnt) + ' in total\n')
 
