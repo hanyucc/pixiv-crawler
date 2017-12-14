@@ -215,8 +215,6 @@ def main():
         except Exception:
             raise SystemExit
 
-    import pdb; pdb.set_trace()
-
     headers['Referer'] = 'https://www.pixiv.net/'
 
     for i in range(start_page, end_page + 1):
