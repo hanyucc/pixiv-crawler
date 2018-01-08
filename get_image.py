@@ -19,7 +19,7 @@ def login(pixiv_id, password):
     login_url = 'https://accounts.pixiv.net/api/login?lang=zh'
     post_key_html = se.get(base_url, headers=headers).text
     post_key_soup = BeautifulSoup(post_key_html, 'lxml')
-    post_key = post_key_soup.find('input')['value']
+    post_key = post_key_soup.find('input', {'name': 'post_key'})['value']
     data = {
         'pixiv_id': pixiv_id,
         'password': password,
