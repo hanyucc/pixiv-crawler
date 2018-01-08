@@ -236,7 +236,7 @@ def main():
         with open('htmls/page-' + str(i) + '.html', 'w', encoding='UTF-8') as file:
             file.write(html.text)
 
-        time.sleep(5)
+        time.sleep(3)
 
     cnt = 0
 
@@ -249,6 +249,7 @@ def main():
         for item in data_items:
             if item['bookmarkCount'] >= bookmark_thresh:
                 get_img(item['illustId'], multi_images)
+                cnt += 1
 
     print('\n' + str(cnt) + ' in total\n')
 
