@@ -17,14 +17,12 @@ headers = {
 def login(pixiv_id, password):
     base_url = 'https://accounts.pixiv.net/login?lang=zh&source=pc&view_type=page&ref=wwwtop_accounts_index'
     login_url = 'https://accounts.pixiv.net/api/login?lang=zh'
-    return_to = 'https://www.pixiv.net/'
     post_key_html = se.get(base_url, headers=headers).text
     post_key_soup = BeautifulSoup(post_key_html, 'lxml')
     post_key = post_key_soup.find('input')['value']
     data = {
         'pixiv_id': pixiv_id,
         'password': password,
-        'return_to': return_to,
         'post_key': post_key
     }
     se.post(login_url, data=data, headers=headers)
