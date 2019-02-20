@@ -123,6 +123,10 @@ def get_img(illust_id, multi_images):
 
     html_str = html.content.decode('utf-8')
 
+    illust_type_begin = html_str.find('"illustType":') + len('"illustType":')
+    illust_type_end = illust_type_begin + 1
+    illust_type = int(html_str[illust_type_begin:illust_type_end])
+
     illust_title_begin = html_str.find('"illustTitle":"') + len('"illustTitle":"')
     illust_title_end = html_str.find('","illustComment"')
     illust_title = html_str[illust_title_begin:illust_title_end].encode().decode('unicode-escape').replace('\\/', '/')
@@ -137,7 +141,7 @@ def get_img(illust_id, multi_images):
     page_count_end = html_str.find(',"isBookmarkable"')
     page_count = int(html_str[page_count_begin:page_count_end])
 
-    if page_count == 1:
+    if illust_type == 0:
         download_one_image(illust_title, illust_src, img_url)
     elif not multi_images:
         return
