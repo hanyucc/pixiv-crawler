@@ -28,30 +28,22 @@ def login(pixiv_id, password):
     se.post(login_url, data=data, headers=headers)
 
 
-def download_one_image(img_info, entire_url):
-    img_info = img_info.find('img')
-    img_src = img_info['src']
-    title = img_info['alt'].replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+def download_one_image(illust_title, illust_src, img_url):
+    title = illust_title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
         .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
 
     if os.path.isfile('images/' + title + '.png') or os.path.isfile('images/' + title + '.jpg'):
         return
 
-    begin = img_src.find('img/')
-    end = img_src.find('_master')
-    then = img_src[:].find('.')
-
-    img_orig_src = 'https://i.pximg.net/img-original/' + img_src[begin:end] + img_src[end + then + 2:]
-
     src_headers = headers
-    src_headers['Referer'] = entire_url
+    src_headers['Referer'] = img_url
 
     try:
-        img = se.get(img_orig_src, headers=src_headers).content
+        img = se.get(illust_src, headers=src_headers).content
     except Exception:
         print('Download image failed. Trying again.')
         try:
-            img = se.get(img_orig_src, headers=src_headers).content
+            img = se.get(illust_src, headers=src_headers).content
         except Exception:
             print('Download image failed. Skipping image.')
             time.sleep(3)
@@ -59,32 +51,22 @@ def download_one_image(img_info, entire_url):
 
     try:
         if img.decode('UTF-8').find('404 Not'):
-            img_orig_src = img_orig_src[:-3] + 'png'
-            print(img_orig_src)
+            illust_src = illust_src[:-3] + 'png'
+            print(illust_src)
             try:
-                img = se.get(img_orig_src, headers=src_headers).content
+                img = se.get(illust_src, headers=src_headers).content
             except Exception:
                 print('Download image failed. Trying again.')
                 try:
-                    img = se.get(img_orig_src, headers=src_headers).content
+                    img = se.get(illust_src, headers=src_headers).content
                 except Exception:
                     print('Download image failed. Skipping image.')
-
-            try:
-                os.mkdir('images')
-            except Exception:
-                pass
 
             with open('images/' + title + '.png', 'ab') as image:
                 image.write(img)
 
     except Exception:
-        print(img_orig_src)
-
-        try:
-            os.mkdir('images')
-        except Exception:
-            pass
+        print(illust_src)
 
         with open('images/' + title + '.jpg', 'ab') as image:
             image.write(img)
@@ -92,18 +74,15 @@ def download_one_image(img_info, entire_url):
     time.sleep(3)
 
 
-def download_multi_images(title, illust_id):
-    title = title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
+def download_multi_images(illust_title, page_count, illust_id):
+    title = illust_title.replace('?', '_').replace('/', '_').replace('\\', '_').replace('*', '_') \
         .replace('|', '_').replace('>', '_').replace('<', '_').replace(':', '_').replace('"', '_').strip()
-    new_url = 'https://www.pixiv.net/member_illust.php?mode=manga&illust_id=' + illust_id
-    html = se.get(new_url, headers=headers, timeout=10)
-    soup = BeautifulSoup(html.text, 'lxml')
-    total = soup.find('span', class_='total')
+
     new_url = 'https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=' + illust_id
 
     print(new_url)
 
-    for i in range(int(total.text) + 1):
+    for i in range(int(page_count)):
         multi_url = new_url + '&page=' + str(i)
         html = se.get(multi_url, headers=headers, timeout=10)
         soup = BeautifulSoup(html.text, 'lxml')
@@ -126,15 +105,8 @@ def download_multi_images(title, illust_id):
                 print('Download image failed. Skipping image.')
                 continue
 
-        try:
-            os.mkdir('images')
-        except Exception:
-            pass
-
-        try:
+        if not os.path.exists('images/' + title):
             os.mkdir('images/' + title)
-        except Exception:
-            pass
 
         with open('images/' + title + '/' + title + '-' + str(i) + type, 'ab') as image:
             image.write(img)
@@ -149,68 +121,78 @@ def get_img(illust_id, multi_images):
 
     html = se.get(img_url, headers=headers, timeout=10)
 
-    soup = BeautifulSoup(html.text, 'lxml')
-    img_info = soup.find('div', class_='works_display')\
-        .find('div', class_='_layout-thumbnail ui-modal-trigger')
+    html_str = html.content.decode('utf-8')
 
-    if img_info:
-        download_one_image(img_info, img_url)
-    elif multi_images == 'n':
+    illust_type_begin = html_str.find('"illustType":') + len('"illustType":')
+    illust_type_end = illust_type_begin + 1
+    illust_type = int(html_str[illust_type_begin:illust_type_end])
+
+    illust_title_begin = html_str.find('"illustTitle":"') + len('"illustTitle":"')
+    illust_title_end = html_str.find('","illustComment"')
+    illust_title = html_str[illust_title_begin:illust_title_end].encode().decode('unicode-escape').replace('\\/', '/')
+
+    # should be an easier way to do this - -
+
+    illust_src_begin = html_str.find('"original":"') + len('"original":"')
+    illust_src_end = html_str.find('"},"tags"')
+    illust_src = html_str[illust_src_begin:illust_src_end].encode().decode('unicode-escape').replace('\\/', '/')
+
+    page_count_begin = html_str.find('"pageCount":') + len('"pageCount":')
+    page_count_end = html_str.find(',"isBookmarkable"')
+    page_count = int(html_str[page_count_begin:page_count_end])
+
+    if illust_type == 0:
+        download_one_image(illust_title, illust_src, img_url)
+    elif not multi_images:
         return
     else:
-        try:
-            title = soup.find('div', class_='works_display')\
-                .find('div', class_='_layout-thumbnail')\
-                .find('img')['alt']
-            img_info = soup.find('div', class_='works_display') \
-                .find('a', class_='multiple')
-        except Exception:
-            return
-
-        if img_info:
-            download_multi_images(title, img_url)
+        download_multi_images(illust_title, page_count, illust_id)
 
 
 def main():
-    raw_keyword = input('Enter search keyword: ')
-    search_keyword = requests.utils.quote(raw_keyword)
+    if os.path.isfile('query.json'):
+        with open('query.json', 'r', encoding='utf-8') as f:
+            query = json.load(f)
+        raw_keyword = query['keyword']
+        search_keyword = requests.utils.quote(raw_keyword)
 
-    start_page = [int(x) for x in input('Enter start page: ').split()][0]
-    end_page = [int(x) for x in input('Enter end page: ').split()][0]
+        start_page = query['start_page']
+        end_page = query['end_page']
 
-    bookmark_thresh = [int(x) for x in input('Enter least number of bookmarks accepted: ').split()][0]
-    multi_images = input('Accept multiple images (manga)? (y/n): ').split()[0]
+        bookmark_threshold = query['bookmark_threshold']
+        multiple_images = query['multiple_images']
 
-    pixiv_id = input('Enter pixiv id or email: ')
-    password = input('Enter pixiv password: ')
+        pixiv_id = query['pixiv_id']
+        password = query['password']
+    else:
+        raw_keyword = input('Enter search keyword: ')
+        search_keyword = requests.utils.quote(raw_keyword)
+
+        start_page = [int(x) for x in input('Enter start page: ').split()][0]
+        end_page = [int(x) for x in input('Enter end page: ').split()][0]
+
+        bookmark_threshold = [int(x) for x in input('Enter least number of bookmarks accepted: ').split()][0]
+        multiple_images = input('Accept multiple images (manga)? (y/n): ').split()[0]
+
+        pixiv_id = input('Enter pixiv id or email: ')
+        password = input('Enter pixiv password: ')
 
     login(pixiv_id, password)
 
-    try:
-        last_keyword = open('htmls/.lastKeyword').read()
-        if last_keyword != search_keyword:
-            delete_folders = input('htmls and images folders need to be deleted to continue. (y/n): ')
-            if delete_folders == 'y':
-                try:
-                	shutil.rmtree('htmls')
-                	shutil.rmtree('images')
-                except Exception:
-                	pass
-            else:
-                raise SystemExit
-    except Exception:
-        try:
-            delete_folders = input('htmls and images folders need to be deleted to continue. (y/n): ')
-            if delete_folders == 'y':
-                try:
-                	shutil.rmtree('htmls')
-                	shutil.rmtree('images')
-                except Exception:
-                	pass
-            else:
-                raise SystemExit
-        except Exception:
-            raise SystemExit
+    if os.path.exists('htmls') or os.path.exists('images'):
+        continue_task = input('Continue the last task with the same keywords (y)\n'
+                              'Or overwrite htmls and images folders (n)\n ')
+        if continue_task == 'n':
+            try:
+                shutil.rmtree('htmls')
+                shutil.rmtree('images')
+            except Exception:
+                pass
+
+    if not os.path.exists('htmls'):
+        os.mkdir('htmls')
+    if not os.path.exists('images'):
+        os.mkdir('images')
 
     headers['Referer'] = 'https://www.pixiv.net/'
 
@@ -223,13 +205,6 @@ def main():
         print(url)
 
         html = se.get(url, headers=headers, timeout=10)
-
-        try:
-            os.mkdir('htmls')
-            with open('htmls/.lastKeyword', 'w') as f:
-                f.write(search_keyword)
-        except Exception:
-            pass
 
         with open('htmls/page-' + str(i) + '.html', 'w', encoding='UTF-8') as file:
             file.write(html.text)
@@ -245,8 +220,9 @@ def main():
         data_items = json.loads(soup.find('input', id='js-mount-point-search-result-list')['data-items'])
 
         for item in data_items:
-            if item['bookmarkCount'] >= bookmark_thresh:
-                get_img(item['illustId'], multi_images)
+            print(item)
+            if item['bookmarkCount'] >= bookmark_threshold:
+                get_img(item['illustId'], multiple_images)
                 cnt += 1
 
     print('\n' + str(cnt) + ' in total\n')
